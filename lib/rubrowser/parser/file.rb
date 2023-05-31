@@ -61,6 +61,7 @@ module Rubrowser
         when :class then parse_class(node, parents, block_name)
         when :const then parse_const(node, parents, block_name)
         when :def then parse_def(node, parents)
+        when :defs then parse_defs(node, parents)
         else parse_array(node.children, parents, block_name)
         end
       end
@@ -81,6 +82,10 @@ module Rubrowser
           line: node.loc.line,
           lines: node.loc.last_line - node.loc.line + 1
         )
+      end
+
+      def parse_defs(node, parents)
+        parse_array(node.children, parents, node.to_sexp_array[2])
       end
 
       def parse_def(node, parents)

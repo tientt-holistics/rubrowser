@@ -9,10 +9,10 @@ module Rubrowser
         def initialize(namespace, caller_namespace, def_name, file: nil, line: nil)
           @namespace = namespace
           @caller_namespace = caller_namespace
+          @def_name = def_name
           @file = file
           @line = line
           @is_circular = false
-          @def_name = def_name
         end
 
         def namespace
