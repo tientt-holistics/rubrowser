@@ -35,6 +35,7 @@ module Rubrowser
         buffer.source = contents.force_encoding(Encoding::UTF_8)
 
         ast = parser.parse(buffer)
+
         parse_block(ast)
       end
 
@@ -53,22 +54,22 @@ module Rubrowser
 
       private
 
-      def parse_block(node, parents = [])
+      def parse_block(node, parents = [], block_name='')
         return empty_result unless valid_node?(node)
-
         case node.type
-        when :module then parse_module(node, parents)
-        when :class then parse_class(node, parents)
-        when :const then parse_const(node, parents)
-        else parse_array(node.children, parents)
+        when :module then parse_module(node, parents, block_name)
+        when :class then parse_class(node, parents, block_name)
+        when :const then parse_const(node, parents, block_name)
+        when :def then parse_def(node, parents)
+        else parse_array(node.children, parents, block_name)
         end
       end
 
-      def parse_module(node, parents = [])
+      def parse_module(node, parents = [], block_name)
         namespace = ast_consts_to_array(node.children.first, parents)
         definition = build_definition(Definition::Module, namespace, node)
         constants = { definitions: [definition] }
-        children_constants = parse_array(node.children[1..-1], namespace)
+        children_constants = parse_array(node.children[1..-1], namespace, block_name)
 
         merge_constants(children_constants, constants)
       end
@@ -82,28 +83,36 @@ module Rubrowser
         )
       end
 
-      def parse_class(node, parents = [])
+      def parse_def(node, parents)
+        parse_array(node.children, parents, node.to_sexp_array[1])
+      end
+
+      def parse_class(node, parents = [], block_name='')
         namespace = ast_consts_to_array(node.children.first, parents)
         definition = build_definition(Definition::Class, namespace, node)
         constants = { definitions: [definition] }
-        children_constants = parse_array(node.children[1..-1], namespace)
+        children_constants = parse_array(node.children[1..-1], namespace, block_name)
 
         merge_constants(children_constants, constants)
       end
 
-      def parse_const(node, parents = [])
+      def parse_const(node, parents = [], block_name='')
         constant = ast_consts_to_array(node)
+        # puts parents
+        # puts node.methods
+        # puts block_name
+        # puts '-------------------------------'
         definition = Relation::Base.new(
           constant,
-          parents,
+          parents+[block_name],
           file: file,
           line: node.loc.line
         )
         { relations: [definition] }
       end
 
-      def parse_array(arr, parents = [])
-        arr.map { |n| parse_block(n, parents) }
+      def parse_array(arr, parents = [], block_name='')
+        arr.map { |n| parse_block(n, parents, block_name) }
            .reduce { |a, e| merge_constants(a, e) }
       end
 
