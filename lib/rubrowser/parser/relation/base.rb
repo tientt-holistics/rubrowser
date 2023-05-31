@@ -6,12 +6,13 @@ module Rubrowser
       class Base
         attr_reader :file, :line
 
-        def initialize(namespace, caller_namespace, file: nil, line: nil)
+        def initialize(namespace, caller_namespace, def_name, file: nil, line: nil)
           @namespace = namespace
           @caller_namespace = caller_namespace
           @file = file
           @line = line
           @is_circular = false
+          @def_name = def_name
         end
 
         def namespace
@@ -20,6 +21,10 @@ module Rubrowser
 
         def caller_namespace
           Definition::Base.new(@caller_namespace, file: file, line: line)
+        end
+
+        def def_name
+          @def_name
         end
 
         def circular?

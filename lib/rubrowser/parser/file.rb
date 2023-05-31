@@ -104,7 +104,8 @@ module Rubrowser
         # puts '-------------------------------'
         definition = Relation::Base.new(
           constant,
-          parents+[block_name],
+          parents,
+          block_name,
           file: file,
           line: node.loc.line
         )

@@ -37,6 +37,7 @@ module Rubrowser
           namespace: relation.namespace.to_s,
           resolved_namespace: relation.resolve(definitions).to_s,
           caller: relation.caller_namespace.to_s,
+          def_name: relation.def_name,
           file: relation.file,
           circular: relation.circular?,
           line: relation.line
