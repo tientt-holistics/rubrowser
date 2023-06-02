@@ -54,23 +54,24 @@ module Rubrowser
 
       private
 
-      def parse_block(node, parents = [], block_name='')
+      def parse_block(node, parents = [], block_name='', target_method='')
         return empty_result unless valid_node?(node)
         case node.type
-        when :module then parse_module(node, parents, block_name)
-        when :class then parse_class(node, parents, block_name)
-        when :const then parse_const(node, parents, block_name)
-        when :def then parse_def(node, parents)
-        when :defs then parse_defs(node, parents)
+        when :module then parse_module(node, parents, block_name, target_method)
+        when :class then parse_class(node, parents, block_name, target_method)
+        when :const then parse_const(node, parents, block_name, target_method)
+        when :def then parse_def(node, parents, target_method)
+        when :defs then parse_defs(node, parents, target_method)
+        when :send then parse_send(node, parents, block_name)
         else parse_array(node.children, parents, block_name)
         end
       end
 
-      def parse_module(node, parents = [], block_name)
+      def parse_module(node, parents = [], block_name, target_method)
         namespace = ast_consts_to_array(node.children.first, parents)
         definition = build_definition(Definition::Module, namespace, node)
         constants = { definitions: [definition] }
-        children_constants = parse_array(node.children[1..-1], namespace, block_name)
+        children_constants = parse_array(node.children[1..-1], namespace, block_name, target_method)
 
         merge_constants(children_constants, constants)
       end
@@ -84,29 +85,32 @@ module Rubrowser
         )
       end
 
-      def parse_defs(node, parents)
+      def parse_send(node, parents, block_name='')
+        target_node = node.children[0]
+        target_method = node.children[1]
+
+        parse_array(node.children, parents, block_name, target_method)
+      end
+
+      def parse_defs(node, parents, target_method)
         parse_array(node.children, parents, node.to_sexp_array[2])
       end
 
-      def parse_def(node, parents)
+      def parse_def(node, parents, target_method)
         parse_array(node.children, parents, node.to_sexp_array[1])
       end
 
-      def parse_class(node, parents = [], block_name='')
+      def parse_class(node, parents = [], block_name='', target_method)
         namespace = ast_consts_to_array(node.children.first, parents)
         definition = build_definition(Definition::Class, namespace, node)
         constants = { definitions: [definition] }
-        children_constants = parse_array(node.children[1..-1], namespace, block_name)
+        children_constants = parse_array(node.children[1..-1], namespace, block_name, target_method)
 
         merge_constants(children_constants, constants)
       end
 
-      def parse_const(node, parents = [], block_name='')
+      def parse_const(node, parents = [], block_name='', target_method = '')
         constant = ast_consts_to_array(node)
-        # puts parents
-        # puts node.methods
-        # puts block_name
-        # puts '-------------------------------'
         definition = Relation::Base.new(
           constant,
           parents,
@@ -117,8 +121,8 @@ module Rubrowser
         { relations: [definition] }
       end
 
-      def parse_array(arr, parents = [], block_name='')
-        arr.map { |n| parse_block(n, parents, block_name) }
+      def parse_array(arr, parents = [], block_name='', target_method='')
+        arr.map { |n| parse_block(n, parents, block_name, target_method) }
            .reduce { |a, e| merge_constants(a, e) }
       end
 
