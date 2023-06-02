@@ -89,6 +89,18 @@ module Rubrowser
         target_node = node.children[0]
         target_method = node.children[1]
 
+        if target_node.nil?
+          definition = Relation::Base.new(
+            parents,
+            parents,
+            block_name,
+            target_method,
+            file: file,
+            line: node.loc.line
+          )
+          return{ relations: [definition] }
+        end
+
         parse_array(node.children, parents, block_name, target_method)
       end
 
