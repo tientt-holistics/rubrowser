@@ -98,7 +98,7 @@ module Rubrowser
             file: file,
             line: node.loc.line
           )
-          return{ relations: [definition] }
+          return merge_constants({ relations: [definition] }, parse_array(node.children, parents, block_name, target_method))
         end
 
         parse_array(node.children, parents, block_name, target_method)
