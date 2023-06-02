@@ -115,6 +115,7 @@ module Rubrowser
           constant,
           parents,
           block_name,
+          target_method,
           file: file,
           line: node.loc.line
         )
