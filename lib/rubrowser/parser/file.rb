@@ -37,6 +37,7 @@ module Rubrowser
         ast = parser.parse(buffer)
 
         parse_block(ast)
+
       end
 
       def parser
@@ -99,9 +100,22 @@ module Rubrowser
             line: node.loc.line
           )
           return merge_constants({ relations: [definition] }, parse_array(node.children, parents, block_name, target_method))
+        elsif target_node.type == :const
+          return parse_array(node.children, parents, block_name, target_method)
+        elsif target_node.type == :lvar
+          definition = Relation::Base.new(
+            [],
+            parents,
+            block_name,
+            target_method,
+            file: file,
+            line: node.loc.line
+          )
+          { relations: [definition] }
+        else
+          return parse_array(node.children, parents, block_name, target_method)
         end
 
-        parse_array(node.children, parents, block_name, target_method)
       end
 
       def parse_defs(node, parents, target_method)
