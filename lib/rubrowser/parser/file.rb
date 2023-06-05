@@ -127,6 +127,18 @@ module Rubrowser
             line: node.loc.line
           )
           return{ relations: [definition] }
+        elsif target_node.type == :send
+          definition = Relation::Base.new(
+            ["Untyped"],
+            parents,
+            block_name,
+            node.children[1],
+            file: file,
+            line: node.loc.line
+          )
+          current_result =  { relations: [definition] }
+          target_parse_result = parse_send(target_node, parents, block_name)
+          return merge_constants(current_result, target_parse_result)
         end
 
         parse_array(node.children, parents, block_name, target_method)
