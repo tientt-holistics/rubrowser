@@ -15,6 +15,7 @@ module Rubrowser
         @file = ::File.absolute_path(file)
         @definitions = []
         @relations = []
+        @variable_type_map = {}
       end
 
       def parse
@@ -63,7 +64,8 @@ module Rubrowser
         when :def then parse_def(node, parents, target_method)
         when :defs then parse_defs(node, parents, target_method)
         when :send then parse_send(node, parents, block_name)
-        else parse_array(node.children, parents, block_name)
+        when :lvasgn then parse_assign(node, parents, block_name, target_method)
+        else parse_array(node.children, parents, block_name, target_method)
         end
       end
 
@@ -85,11 +87,16 @@ module Rubrowser
         )
       end
 
+      def parse_assign(node, parents = [], block_name, target_method)
+        # TODO: handle assign type
+        parse_array(node.children, parents, block_name, target_method)
+      end
+
       def parse_send(node, parents, block_name='')
         target_node = node.children[0]
         target_method = node.children[1]
-
         if target_node.nil?
+          # self call
           if target_method.to_s.strip == 'const'
             return parse_array(node.children, parents, "const", "")
           elsif target_method.to_s.strip == 'raise'
@@ -100,6 +107,22 @@ module Rubrowser
             parents,
             block_name,
             target_method,
+            file: file,
+            line: node.loc.line
+          )
+          return{ relations: [definition] }
+        end
+        
+        if target_node.type == :lvar
+
+          variable_name =  node.children[0].to_sexp_array[1]
+          variable_type = @variable_type_map.fetch(variable_name, "Untyped")
+
+          definition = Relation::Base.new(
+            [variable_type],
+            parents,
+            block_name,
+            node.children[1],
             file: file,
             line: node.loc.line
           )
