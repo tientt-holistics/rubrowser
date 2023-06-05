@@ -92,6 +92,8 @@ module Rubrowser
         if target_node.nil?
           if target_method.to_s.strip == 'const'
             return parse_array(node.children, parents, "const", "")
+          elsif target_method.to_s.strip == 'raise'
+            return parse_array(node.children, parents, "raise", "")
           end
           definition = Relation::Base.new(
             parents,
