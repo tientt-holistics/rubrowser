@@ -93,27 +93,34 @@ module Rubrowser
       end
 
       def parse_send(node, parents, block_name='')
-        target_node = node.children[0]
-        target_method = node.children[1]
-        if target_node.nil?
+        kaller = node.children[0]
+        target = node.children[1]
+        params = node.children[2]
+
+
+
+        if kaller.nil?
           # self call
-          if target_method.to_s.strip == 'const'
+          if target.to_s.strip == 'const'
             return parse_array(node.children, parents, "const", "")
-          elsif target_method.to_s.strip == 'raise'
+          elsif target.to_s.strip == 'raise'
             return parse_array(node.children, parents, "raise", "")
           end
           definition = Relation::Base.new(
             parents,
             parents,
             block_name,
-            target_method,
+            target,
             file: file,
             line: node.loc.line
           )
-          return{ relations: [definition] }
+          result = { relations: [definition] }
+          target_parse_result = parse_block(target, parents, block_name, target)
+          params_parse_result = parse_block(params, parents, block_name, target)
+          return merge_constants(result, merge_constants(target_parse_result, params_parse_result))
         end
-        
-        if target_node.type == :lvar
+
+        if kaller.type == :lvar
 
           variable_name =  node.children[0].to_sexp_array[1]
           variable_type = @variable_type_map.fetch(variable_name, "Untyped")
@@ -126,8 +133,13 @@ module Rubrowser
             file: file,
             line: node.loc.line
           )
-          return{ relations: [definition] }
-        elsif target_node.type == :send
+          result = { relations: [definition] }
+          target_parse_result = parse_block(target, parents, block_name, target)
+          params_parse_result = parse_block(params, parents, block_name, target)
+          return merge_constants(result, merge_constants(target_parse_result, params_parse_result))
+        end
+
+        if kaller.type == :send
           definition = Relation::Base.new(
             ["Untyped"],
             parents,
@@ -136,12 +148,13 @@ module Rubrowser
             file: file,
             line: node.loc.line
           )
-          current_result =  { relations: [definition] }
-          target_parse_result = parse_send(target_node, parents, block_name)
-          return merge_constants(current_result, target_parse_result)
+          result = { relations: [definition] }
+          target_parse_result = parse_block(target, parents, block_name, target)
+          params_parse_result = parse_block(params, parents, block_name, target)
+          return merge_constants(result, merge_constants(target_parse_result, params_parse_result))
         end
 
-        parse_array(node.children, parents, block_name, target_method)
+        parse_array(node.children, parents, block_name, target)
       end
 
       def parse_defs(node, parents, target_method)
